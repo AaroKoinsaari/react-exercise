@@ -10,13 +10,28 @@ const App = function (props) {
   // kopioimista varten on annettu valmis mallifunktio kopioi_kilpailu
   // huom. kaikissa tilanteissa ei kannata kopioida koko dataa
   const [state, setState] = React.useState({ "kilpailu": kopioi_kilpailu(data) });
-  data = undefined; // tyhjätään data, että sitä ei vahingossa käytetä
+  // data = undefined; // tyhjätään data, että sitä ei vahingossa käytetä
   console.log(state.kilpailu);
+
+  const lisaaUusiJoukkue = (uusiJoukkue) => {
+    setState(prevState => ({
+      kilpailu: {
+        ...prevState.kilpailu,
+        joukkueet: [...prevState.kilpailu.joukkueet, uusiJoukkue]
+      }
+    }));
+  };
 
   /* jshint ignore:start */
   return (
     <div>
-      <LisaaJoukkue leimaustavat={state.kilpailu.leimaustavat} sarjat={state.kilpailu.sarjat} jasenet={state.kilpailu.jasenet} />
+      <LisaaJoukkue
+        leimaustavat={state.kilpailu.leimaustavat}
+        sarjat={state.kilpailu.sarjat}
+        jasenet={state.kilpailu.jasenet}
+        joukkueet={state.kilpailu.joukkueet}
+        lisaaUusiJoukkue={lisaaUusiJoukkue}
+      />
       <ListaaJoukkueet />
     </div>
   );
@@ -25,21 +40,76 @@ const App = function (props) {
 
 const LisaaJoukkue = function (props) {
   /* jshint ignore:start */
-  // Luodaan paikallinen tila viidelle jäsenelle
-  const [jasenet, setJasenet] = React.useState(Array(5).fill(''));
+  const [nimi, setNimi] = React.useState('');
+  const [valitutLeimaustavat, setValitutLeimaustavat] = React.useState([]);
+  const [valittuSarja, setValittuSarja] = React.useState(props.sarjat[0].id); // Alustetaan ensimmäisen sarjan id
+  const [jasenet, setJasenet] = React.useState(Array(5).fill(''));  // Luodaan paikallinen tila viidelle jäsenelle
 
+  // Päivitetään jäsenen arvo tiettyyn indeksiin
   const handleJasenChange = (index, value) => {
-    // Päivitetään jäsenen arvo tiettyyn indeksiin
     setJasenet(jasenet.map((jasen, i) => (i === index ? value : jasen)));
   };
 
+  // Nimen muutosten käsittely
+  const handleNimiChange = (event) => {
+    setNimi(event.target.value);
+  };
+
+  const handleLeimaustapaChange = (event) => {
+    const valittu = parseInt(event.target.value);
+    setValitutLeimaustavat(prev =>
+      event.target.checked ? [...prev, valittu] : prev.filter(tapa => tapa !== valittu)
+    );
+  };
+
+  const handleSarjaChange = (event) => {
+    setValittuSarja(parseInt(event.target.value));
+  };
+
+  // Validointi ennen lomakkeen lähetystä
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    // Tarkista joukkueen nimi
+    if (!nimi.trim()) {
+      alert('Nimi on pakollinen ja ei saa olla pelkkää whitespacea!');
+      return;
+    }
+
+    // Tarkista, onko samannimistä joukkuetta jo olemassa (case-insensitive)
+    let nimiTrimmed = nimi.trim().toLowerCase();
+    let onJoOlemassa = props.joukkueet.some(joukkue => joukkue.nimi.trim().toLowerCase() === nimiTrimmed);
+    if (onJoOlemassa) {
+      alert('Samanniminen joukkue on jo olemassa!');
+      return;
+    }
+
+    // Tarkista jäsenten nimet
+    if (!jasenet[0].trim() || !jasenet[1].trim()) {
+      alert('Jäseniä on oltava vähintään 2!')
+      return;
+    }
+
+    // Lähetettävän datan kokoaminen
+    const lahettavaData = {
+      id: Date.now(),  // Generoidaan uniikki id
+      nimi: nimi.trim(),
+      leimaustavat: valitutLeimaustavat,
+      jasenet: jasenet.filter(jasen => jasen.trim() !== ''),
+      sarja: valittuSarja,
+      rastileimaukset: []
+    };
+
+    props.lisaaUusiJoukkue(lahettavaData);  // Lähetetään data
+  };
+
   return (
-    <form action="https://appro.mit.jyu.fi/cgi-bin/view.cgi" method="post">
+    <form onSubmit={handleSubmit} action="https://appro.mit.jyu.fi/cgi-bin/view.cgi" method="post">
       <fieldset className="section">
         <legend>Joukkueen tiedot</legend>
         <div className="label-container">
           <label htmlFor="nimi">Nimi</label>
-          <input type="text" name="nimi" />
+          <input type="text" name="nimi" value={nimi} onChange={handleNimiChange} />
         </div>
 
         <div className="label-container">
@@ -60,7 +130,13 @@ const LisaaJoukkue = function (props) {
             {props.sarjat && props.sarjat.map((sarja, index) => (
               <label key={index}>
                 {sarja.nimi}
-                <input type="radio" name="sarja" value={sarja.id} defaultChecked={index === 0} />
+                <input
+                  type="radio"
+                  name="sarja"
+                  value={sarja.id}
+                  checked={valittuSarja === sarja.id}
+                  onChange={handleSarjaChange}
+                />
               </label>
             ))}
           </div>
@@ -92,8 +168,6 @@ const LisaaJoukkue = function (props) {
   );
   /* jshint ignore:end */
 };
-
-
 
 
 const ListaaJoukkueet = function (props) {
@@ -165,5 +239,3 @@ function kopioi_kilpailu(data) {
   kilpailu.joukkueet = Array.from(data.joukkueet, kopioi_joukkue);
   return kilpailu;
 }
-
-

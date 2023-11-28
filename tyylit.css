@@ -1,0 +1,62 @@
+body {
+    background-color: white;
+    color: black;
+}
+
+form {
+    width: 30rem;
+    align-items: baseline; /* Tasoittaa lomakeelementit vaakatasoon */
+    margin: 10px;
+}
+
+fieldset.section {
+    border: 1px solid #9e9e9e;
+    padding: 0, 20px;
+}
+
+legend {
+    padding: 0 5px;
+}
+
+.label-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin: 0.5rem 0;
+    width: 100%;
+}
+
+.input-container {
+    flex: 0 0 45%;
+    display: flex;
+    align-items: center; 
+}
+
+.jasen-kentta {
+    flex-grow: 1;
+}
+
+
+.label-container input[type="text"], 
+.label-container label {
+    flex: 0 0 45%;
+}
+
+#sarjatContainer label, #leimaustavatContainer label {
+    display: flex;
+    justify-content: flex-end;
+}
+
+#sarjatContainer input[type="radio"] {
+    margin-left: 0.5rem;
+}
+
+.remove-btn {
+    color: red;
+    margin-left: 5px;
+}
+
+input[type="submit"] {
+    margin-top: 0.1rem;
+}

@@ -15,34 +15,66 @@ const App = function(props) {
 
       /* jshint ignore:start */
       return (
-      <div>
-	      <LisaaJoukkue leimaustavat={state.kilpailu.leimaustavat} />
-	      <ListaaJoukkueet />
-      </div>);
+        <div>
+          <LisaaJoukkue leimaustavat={state.kilpailu.leimaustavat} sarjat={state.kilpailu.sarjat} jasenet={state.kilpailu.jasenet} />
+          <ListaaJoukkueet />
+        </div>
+      );
       /* jshint ignore:end */
-};
+    };
 
-const LisaaJoukkue = function(props) {
+    const LisaaJoukkue = function(props) {
       /* jshint ignore:start */
       return (
-        <form>
+        <form action="https://appro.mit.jyu.fi/cgi-bin/view.cgi" method="post">
           <fieldset className="section">
             <legend>Joukkueen tiedot</legend>
             <div className="label-container">
               <label htmlFor="nimi">Nimi</label>
-              <input type="text" name="nimi" value="" />
+              <input type="text" name="nimi" />
             </div>
-            <legend>Leimaustapa</legend>
+    
             <div className="label-container">
-              {props.leimaustavat && props.leimaustavat.map((tapa, index) => (
-                <div key={index}>{tapa}</div>
+              <label>Leimaustapa</label>
+              <div id="leimaustavatContainer">
+                {props.leimaustavat && props.leimaustavat.map((tapa, index) => (
+                  <label key={index}>
+                    {tapa}
+                    <input type="checkbox" name="leimaustapa" value={index} />
+                  </label>
+                ))}
+              </div>
+            </div>
+    
+            <div className="label-container">
+              <label>Sarjat</label>
+              <div id="sarjatContainer">
+                {props.sarjat && props.sarjat.map((sarja, index) => (
+                  <label key={index}>
+                    {sarja.nimi}
+                    <input type="radio" name="sarja" value={sarja.id} defaultChecked={index === 0} />
+                  </label>
+                ))}
+              </div>
+            </div>
+          </fieldset>
+    
+          <fieldset className="section">
+            <legend>Jäsenet</legend>
+            <div id="jasenetContainer">
+              {props.jasenet && props.jasenet.map((jasen, index) => (
+                <div key={index}>{jasen.nimi}</div>
               ))}
             </div>
           </fieldset>
+    
+          <input type="submit" name="submit" value="Tallenna" />
         </form>
       );
       /* jshint ignore:end */
     };
+    
+    
 
 
 const ListaaJoukkueet = function(props) {

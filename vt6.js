@@ -14,19 +14,35 @@ const App = function(props) {
         console.log( state.kilpailu );
 
       /* jshint ignore:start */
-      return (<div>
-	<LisaaJoukkue />
-	<ListaaJoukkueet />
-        </div>);
+      return (
+      <div>
+	      <LisaaJoukkue leimaustavat={state.kilpailu.leimaustavat} />
+	      <ListaaJoukkueet />
+      </div>);
       /* jshint ignore:end */
 };
 
 const LisaaJoukkue = function(props) {
       /* jshint ignore:start */
-      return (<form>
-        </form>);
+      return (
+        <form>
+          <fieldset className="section">
+            <legend>Joukkueen tiedot</legend>
+            <div className="label-container">
+              <label htmlFor="nimi">Nimi</label>
+              <input type="text" name="nimi" value="" />
+            </div>
+            <legend>Leimaustapa</legend>
+            <div className="label-container">
+              {props.leimaustavat && props.leimaustavat.map((tapa, index) => (
+                <div key={index}>{tapa}</div>
+              ))}
+            </div>
+          </fieldset>
+        </form>
+      );
       /* jshint ignore:end */
-};
+    };
 
 
 const ListaaJoukkueet = function(props) {

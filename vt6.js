@@ -32,7 +32,10 @@ const App = function (props) {
         joukkueet={state.kilpailu.joukkueet}
         lisaaUusiJoukkue={lisaaUusiJoukkue}
       />
-      <ListaaJoukkueet />
+      <ListaaJoukkueet
+        joukkueet={state.kilpailu.joukkueet}
+        leimaustavat={state.kilpailu.leimaustavat}
+      />
     </div>
   );
   /* jshint ignore:end */
@@ -181,8 +184,37 @@ const LisaaJoukkue = function (props) {
 
 const ListaaJoukkueet = function (props) {
   /* jshint ignore:start */
-  return (<table>
-  </table>);
+  // Järjestetään joukkueet ensisijaisesti sarjan nimen ja toissijaisesti joukkueen nimen mukaan
+  const jarjestetytJoukkueet = props.joukkueet.slice().sort((a, b) => {
+    const sarjaA = a.sarja.nimi.trim().toLowerCase();
+    const sarjaB = b.sarja.nimi.trim().toLowerCase();
+    const nimiA = a.nimi.trim().toLowerCase();
+    const nimiB = b.nimi.trim().toLowerCase();
+
+    if (sarjaA === sarjaB) {
+      return nimiA.localeCompare(nimiB);
+    }
+    return sarjaA.localeCompare(sarjaB);
+  });
+
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th>Sarja</th>
+          <th>Joukkue</th>
+        </tr>
+      </thead>
+      <tbody>
+        {jarjestetytJoukkueet.map(joukkue => (
+          <tr key={joukkue.id}>
+            <td>{joukkue.sarja.nimi}</td>
+            <td>{joukkue.nimi}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
   /* jshint ignore:end */
 };
 

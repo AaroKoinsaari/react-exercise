@@ -90,17 +90,26 @@ const LisaaJoukkue = function (props) {
       return;
     }
 
+    // Etsitään valittu sarjaobjekti
+    const valittuSarjaObjekti = props.sarjat.find(sarja => sarja.id === valittuSarja);
+
     // Lähetettävän datan kokoaminen
     const lahettavaData = {
       id: Date.now(),  // Generoidaan uniikki id
       nimi: nimi.trim(),
       leimaustavat: valitutLeimaustavat,
       jasenet: jasenet.filter(jasen => jasen.trim() !== ''),
-      sarja: valittuSarja,
+      sarja: valittuSarjaObjekti,
       rastileimaukset: []
     };
 
     props.lisaaUusiJoukkue(lahettavaData);  // Lähetetään data
+
+    // Tyhjennetään lomake
+    setNimi('');
+    setValitutLeimaustavat([]);
+    setValittuSarja(props.sarjat[0].id);
+    setJasenet(Array(5).fill(''));
   };
 
   return (

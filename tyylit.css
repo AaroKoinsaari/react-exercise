@@ -3,6 +3,12 @@ body {
     color: black;
 }
 
+.flex-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+}
+
 form {
     width: 30rem;
     align-items: baseline;

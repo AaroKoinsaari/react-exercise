@@ -24,7 +24,7 @@ const App = function (props) {
 
   /* jshint ignore:start */
   return (
-    <div>
+    <div className="flex-container">
       <LisaaJoukkue
         leimaustavat={state.kilpailu.leimaustavat}
         sarjat={state.kilpailu.sarjat}

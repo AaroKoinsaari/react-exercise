@@ -206,7 +206,7 @@ const ListaaJoukkueet = function (props) {
         </tr>
       </thead>
       <tbody>
-        {jarjestetytJoukkueet.map(joukkue => (
+        {jarjestetytJoukkueet.map((joukkue, index) => (
           <tr key={joukkue.id}>
             <td>{joukkue.sarja.nimi}</td>
             <td>{joukkue.nimi}</td>

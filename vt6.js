@@ -24,18 +24,21 @@ const App = function (props) {
 
   /* jshint ignore:start */
   return (
-    <div className="flex-container">
-      <LisaaJoukkue
-        leimaustavat={state.kilpailu.leimaustavat}
-        sarjat={state.kilpailu.sarjat}
-        jasenet={state.kilpailu.jasenet}
-        joukkueet={state.kilpailu.joukkueet}
-        lisaaUusiJoukkue={lisaaUusiJoukkue}
-      />
-      <ListaaJoukkueet
-        joukkueet={state.kilpailu.joukkueet}
-        leimaustavat={state.kilpailu.leimaustavat}
-      />
+    <div>
+      <h1>Lisää joukkue</h1>
+      <div className="flex-container">
+        <LisaaJoukkue
+          leimaustavat={state.kilpailu.leimaustavat}
+          sarjat={state.kilpailu.sarjat}
+          jasenet={state.kilpailu.jasenet}
+          joukkueet={state.kilpailu.joukkueet}
+          lisaaUusiJoukkue={lisaaUusiJoukkue}
+        />
+        <ListaaJoukkueet
+          joukkueet={state.kilpailu.joukkueet}
+          leimaustavat={state.kilpailu.leimaustavat}
+        />
+      </div>
     </div>
   );
   /* jshint ignore:end */
@@ -75,7 +78,7 @@ const LisaaJoukkue = function (props) {
 
     // Tarkista joukkueen nimi
     if (!nimi.trim()) {
-      alert('Nimi on pakollinen ja ei saa olla pelkkää whitespacea!');
+      // alert('Nimi on pakollinen ja ei saa olla pelkkää whitespacea!');
       return;
     }
 
@@ -83,13 +86,13 @@ const LisaaJoukkue = function (props) {
     let nimiTrimmed = nimi.trim().toLowerCase();
     let onJoOlemassa = props.joukkueet.some(joukkue => joukkue.nimi.trim().toLowerCase() === nimiTrimmed);
     if (onJoOlemassa) {
-      alert('Samanniminen joukkue on jo olemassa!');
+      // alert('Samanniminen joukkue on jo olemassa!');
       return;
     }
 
     // Tarkista jäsenten nimet
     if (!jasenet[0].trim() || !jasenet[1].trim()) {
-      alert('Jäseniä on oltava vähintään 2!')
+      // alert('Jäseniä on oltava vähintään 2!')
       return;
     }
 
@@ -130,7 +133,13 @@ const LisaaJoukkue = function (props) {
             {props.leimaustavat && props.leimaustavat.map((tapa, index) => (
               <label key={index}>
                 {tapa}
-                <input type="checkbox" name="leimaustapa" value={index} />
+                <input
+                  type="checkbox"
+                  name="leimaustapa"
+                  value={index}
+                  checked={valitutLeimaustavat.includes(index)}  // Sidotaan tila
+                  onChange={handleLeimaustapaChange}
+                />
               </label>
             ))}
           </div>

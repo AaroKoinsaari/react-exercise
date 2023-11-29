@@ -1,11 +1,5 @@
-body {
-    background-color: white;
-    color: black;
-}
-
 .flex-container {
     display: flex;
-    justify-content: space-between;
     align-items: start;
 }
 
@@ -64,7 +58,7 @@ input[type="submit"] {
 }
 
 table {
-    width: 20vw;
+    width: auto;
     border-collapse: separate;
     border-spacing: 10px;
     border-top: 2px solid #dcdcdc;
@@ -85,6 +79,6 @@ td {
 }
 
 th {
-    background-color: #FFD700;
+    background-color: #ffc653;
     color: solid #333;
 }

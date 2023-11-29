@@ -44,7 +44,7 @@ const App = function (props) {
   /* jshint ignore:end */
 };
 
-const LisaaJoukkue = function (props) {
+const LisaaJoukkue = React.memo(function (props) {
   /* jshint ignore:start */
   const [nimi, setNimi] = React.useState('');
   const [valitutLeimaustavat, setValitutLeimaustavat] = React.useState([]);
@@ -188,10 +188,10 @@ const LisaaJoukkue = function (props) {
     </form>
   );
   /* jshint ignore:end */
-};
+});
 
 
-const ListaaJoukkueet = function (props) {
+const ListaaJoukkueet = React.memo(function (props) {
   /* jshint ignore:start */
   // Järjestetään joukkueet ensisijaisesti sarjan nimen ja toissijaisesti joukkueen nimen mukaan
   const jarjestetytJoukkueet = props.joukkueet.slice().sort((a, b) => {
@@ -225,7 +225,7 @@ const ListaaJoukkueet = function (props) {
     </table>
   );
   /* jshint ignore:end */
-};
+});
 
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

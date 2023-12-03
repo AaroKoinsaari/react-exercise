@@ -308,15 +308,38 @@ const ListaaJoukkueet = React.memo(function (props) {
     const nimiA = a.nimi.trim().toLowerCase();
     const nimiB = b.nimi.trim().toLowerCase();
 
-    if (sarjaA === sarjaB) {
-      return nimiA.localeCompare(nimiB);
-    }
-    return sarjaA.localeCompare(sarjaB);
+    return sarjaA === sarjaB ? nimiA.localeCompare(nimiB) : sarjaA.localeCompare(sarjaB);
   });
 
   const lataaJoukkueenTiedot = (joukkue) => {
     props.asetaMuokattavaJoukkue(joukkue);
   }
+
+  // Komponentti joukkueen tiedoista
+  const JoukkueenTiedot = ({ joukkue }) => {
+    return (
+      <tr>
+        <td>{joukkue.sarja.nimi}</td>
+        <td style={{ cursor: 'pointer' }} onClick={() => lataaJoukkueenTiedot(joukkue)}>
+          {joukkue.nimi}
+        </td>
+        <td>
+          <JoukkueenJasenet jasenet={joukkue.jasenet} />
+        </td>
+      </tr>
+    );
+  };
+
+  // Komponentti joukkueen jäsenistä
+  const JoukkueenJasenet = ({ jasenet }) => {
+    return (
+      <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+        {jasenet.map((jasen, index) => (
+          <li key={index}>{jasen}</li>
+        ))}
+      </ul>
+    );
+  };
 
   return (
     <table>
@@ -324,20 +347,15 @@ const ListaaJoukkueet = React.memo(function (props) {
         <tr>
           <th>Sarja</th>
           <th>Joukkue</th>
+          <th>Jäsenet</th>
         </tr>
       </thead>
       <tbody>
-        {jarjestetytJoukkueet.map((joukkue) => (
-          <tr key={joukkue.id}>
-            <td>{joukkue.sarja.nimi}</td>
-            <td style={{ cursor: 'pointer' }} onClick={() => lataaJoukkueenTiedot(joukkue)}>
-              {joukkue.nimi}
-            </td>
-          </tr>
-        ))}
+        {jarjestetytJoukkueet.map(joukkue => <JoukkueenTiedot key={joukkue.id} joukkue={joukkue} />)}
       </tbody>
     </table>
   );
+
   /* jshint ignore:end */
 });
 

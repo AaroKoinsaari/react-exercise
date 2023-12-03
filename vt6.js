@@ -341,6 +341,55 @@ const ListaaJoukkueet = React.memo(function (props) {
     );
   };
 
+  const JoukkueenMatka = ({ rastileimaukset }) => {
+    // Etsitään viimeisin lähtörasti ja ensimmäinen maalirasti
+    const lahtoIndex = rastileimaukset.map(leimaus => leimaus.rasti && leimaus.rasti.koodi).lastIndexOf('LAHTO');
+    const maaliIndex = rastileimaukset.map(leimaus => leimaus.rasti && leimaus.rasti.koodi).indexOf('MAALI');
+
+    if (lahtoIndex === -1 || maaliIndex === -1 || lahtoIndex >= maaliIndex) {
+      return <span>Matkaa ei voida laskea</span>;
+    }
+
+    // Lasketaan matka lähtö- ja maalirastin välillä
+    let matka = 0;
+    for (let i = lahtoIndex; i < maaliIndex; i++) {
+      const nykyinenRasti = rastileimaukset[i].rasti;
+      const seuraavaRasti = rastileimaukset[i + 1].rasti;
+
+      if (nykyinenRasti && seuraavaRasti && nykyinenRasti.lat && nykyinenRasti.lon && seuraavaRasti.lat && seuraavaRasti.lon) {
+        matka += getDistanceFromLatLonInKm(
+          parseFloat(nykyinenRasti.lat), parseFloat(nykyinenRasti.lon),
+          parseFloat(seuraavaRasti.lat), parseFloat(seuraavaRasti.lon)
+        );
+      }
+    }
+
+    return <span>{matka.toFixed(2)} km</span>;
+  };
+
+  /**
+  * Laskee kahden pisteen välisen etäisyyden
+  */
+  function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+    let R = 6371; // Radius of the earth in km
+    let dLat = deg2rad(lat2 - lat1);  // deg2rad below
+    let dLon = deg2rad(lon2 - lon1);
+    let a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2)
+      ;
+    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    let d = R * c; // Distance in km
+    return d;
+  }
+  /**
+     Muuntaa asteet radiaaneiksi
+    */
+  function deg2rad(deg) {
+    return deg * (Math.PI / 180);
+  }
+
   return (
     <table>
       <thead>
@@ -348,17 +397,38 @@ const ListaaJoukkueet = React.memo(function (props) {
           <th>Sarja</th>
           <th>Joukkue</th>
           <th>Jäsenet</th>
+          <th>Matka</th>
         </tr>
       </thead>
       <tbody>
-        {jarjestetytJoukkueet.map(joukkue => <JoukkueenTiedot key={joukkue.id} joukkue={joukkue} />)}
+        {jarjestetytJoukkueet.map((joukkue) => (
+          <tr key={joukkue.id}>
+            <td>{joukkue.sarja.nimi}</td>
+            <td>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  lataaJoukkueenTiedot(joukkue);
+                }}
+                style={{ cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                {joukkue.nimi}
+              </a>
+            </td>
+            <td>
+              <JoukkueenJasenet jasenet={joukkue.jasenet} />
+            </td>
+            <td>
+              <JoukkueenMatka rastileimaukset={joukkue.rastileimaukset} />
+            </td>
+          </tr>
+        ))}
       </tbody>
     </table>
   );
-
   /* jshint ignore:end */
 });
-
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

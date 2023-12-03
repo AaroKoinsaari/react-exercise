@@ -342,9 +342,17 @@ const ListaaJoukkueet = React.memo(function (props) {
   };
 
   const JoukkueenMatka = ({ rastileimaukset }) => {
-    // Etsitään viimeisin lähtörasti ja ensimmäinen maalirasti
-    const lahtoIndex = rastileimaukset.map(leimaus => leimaus.rasti && leimaus.rasti.koodi).lastIndexOf('LAHTO');
-    const maaliIndex = rastileimaukset.map(leimaus => leimaus.rasti && leimaus.rasti.koodi).indexOf('MAALI');
+    // Suodatetaan pois rastileimaukset, joilla ei ole kelvollisia sijaintitietoja
+    const kelvollisetLeimaukset = rastileimaukset.filter(leimaus =>
+      leimaus.rasti && leimaus.rasti.lat && leimaus.rasti.lon
+    );
+
+    // Järjestetään kelvolliset rastileimaukset ajan perusteella
+    const jarjestetytLeimaukset = kelvollisetLeimaukset.sort((a, b) => new Date(a.aika) - new Date(b.aika));
+
+    // Etsitään viimeisen 'LAHTO' ja ensimmäisen 'MAALI' rastileimauksen indeksit
+    const lahtoIndex = jarjestetytLeimaukset.map(leimaus => leimaus.rasti.koodi).lastIndexOf('LAHTO');
+    const maaliIndex = jarjestetytLeimaukset.map(leimaus => leimaus.rasti.koodi).indexOf('MAALI');
 
     if (lahtoIndex === -1 || maaliIndex === -1 || lahtoIndex >= maaliIndex) {
       return <span>Matkaa ei voida laskea</span>;
@@ -353,10 +361,11 @@ const ListaaJoukkueet = React.memo(function (props) {
     // Lasketaan matka lähtö- ja maalirastin välillä
     let matka = 0;
     for (let i = lahtoIndex; i < maaliIndex; i++) {
-      const nykyinenRasti = rastileimaukset[i].rasti;
-      const seuraavaRasti = rastileimaukset[i + 1].rasti;
+      const nykyinenRasti = jarjestetytLeimaukset[i].rasti;
+      const seuraavaLeimaus = jarjestetytLeimaukset[i + 1];
+      const seuraavaRasti = seuraavaLeimaus ? seuraavaLeimaus.rasti : null;
 
-      if (nykyinenRasti && seuraavaRasti && nykyinenRasti.lat && nykyinenRasti.lon && seuraavaRasti.lat && seuraavaRasti.lon) {
+      if (nykyinenRasti && seuraavaRasti) {
         matka += getDistanceFromLatLonInKm(
           parseFloat(nykyinenRasti.lat), parseFloat(nykyinenRasti.lon),
           parseFloat(seuraavaRasti.lat), parseFloat(seuraavaRasti.lon)

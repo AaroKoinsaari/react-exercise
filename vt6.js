@@ -49,11 +49,18 @@ const LisaaJoukkue = React.memo(function (props) {
   const [nimi, setNimi] = React.useState('');
   const [valitutLeimaustavat, setValitutLeimaustavat] = React.useState([]);
   const [valittuSarja, setValittuSarja] = React.useState(props.sarjat[0].id); // Alustetaan ensimmäisen sarjan id
-  const [jasenet, setJasenet] = React.useState(Array(5).fill(''));  // Luodaan paikallinen tila viidelle jäsenelle
+  const [jasenet, setJasenet] = React.useState(['', '']);  // Ensimmäiset kaksi tyhjää kenttää
 
   // Päivitetään jäsenen arvo tiettyyn indeksiin
   const handleJasenChange = (index, value) => {
-    setJasenet(jasenet.map((jasen, i) => (i === index ? value : jasen)));
+    let updatedJasenet = jasenet.map((jasen, i) => (i === index ? value : jasen));
+
+    // Lisätään kenttä, jos viimeinen kenttä on täytetty, mutta rajoitetaan max 5
+    if (updatedJasenet[updatedJasenet.length - 1] && updatedJasenet.length < 5) {
+      updatedJasenet = [...updatedJasenet, ''];
+    }
+
+    setJasenet(updatedJasenet);
   };
 
   // Nimen muutosten käsittely
@@ -91,8 +98,9 @@ const LisaaJoukkue = React.memo(function (props) {
     }
 
     // Tarkista jäsenten nimet
-    if (!jasenet[0].trim() || !jasenet[1].trim()) {
-      // alert('Jäseniä on oltava vähintään 2!')
+    const taytetytJasenet = jasenet.filter(jasen => jasen.trim());
+    if (taytetytJasenet.length < 2) {
+      // alert('Jäseniä on oltava vähintään 2!');
       return;
     }
 

@@ -46,17 +46,22 @@ const App = function (props) {
 
 const LisaaJoukkue = React.memo(function (props) {
   /* jshint ignore:start */
+  const MAX_JASENET = 5;  // Dynaamisesti luotujen jäsenkenttien määrän säätämiseen
   const [nimi, setNimi] = React.useState('');
   const [valitutLeimaustavat, setValitutLeimaustavat] = React.useState([]);
   const [valittuSarja, setValittuSarja] = React.useState(props.sarjat[0].id); // Alustetaan ensimmäisen sarjan id
   const [jasenet, setJasenet] = React.useState(['', '']);  // Ensimmäiset kaksi tyhjää kenttää
 
+  const nimiRef = React.useRef();
+  const jasenRef = React.useRef();
+
   // Päivitetään jäsenen arvo tiettyyn indeksiin
   const handleJasenChange = (index, value) => {
     let updatedJasenet = jasenet.map((jasen, i) => (i === index ? value : jasen));
 
-    // Lisätään kenttä, jos viimeinen kenttä on täytetty, mutta rajoitetaan max 5
-    if (updatedJasenet[updatedJasenet.length - 1] && updatedJasenet.length < 5) {
+    // Tarkistetaan onko viimeisimmän kentän sisältö muuta kuin tyhjää tai whitespacea
+    const viimeinenKenttaTaytetty = updatedJasenet[updatedJasenet.length - 1].trim() !== '';
+    if (viimeinenKenttaTaytetty && updatedJasenet.length < MAX_JASENET) {
       updatedJasenet = [...updatedJasenet, ''];
     }
 
@@ -79,30 +84,54 @@ const LisaaJoukkue = React.memo(function (props) {
     setValittuSarja(parseInt(event.target.value));
   };
 
-  // Validointi ennen lomakkeen lähetystä
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  // Validoi lomakkeen ja ilmoittaa virheistä, jos sellaisia on
+  const validateForm = () => {
+    // Tyhjennetään mahdolliset aiemmat virheilmoitukset
+    if (nimiRef.current) {
+      nimiRef.current.setCustomValidity("");
+    }
+    if (jasenRef.current) {
+      jasenRef.current.setCustomValidity("");
+    }
 
     // Tarkista joukkueen nimi
     if (!nimi.trim()) {
-      // alert('Nimi on pakollinen ja ei saa olla pelkkää whitespacea!');
-      return;
+      nimiRef.current.setCustomValidity("Nimi ei saa olla tyhjä!");
+      nimiRef.current.reportValidity();
+      return false;
     }
 
     // Tarkista, onko samannimistä joukkuetta jo olemassa (case-insensitive)
     let nimiTrimmed = nimi.trim().toLowerCase();
     let onJoOlemassa = props.joukkueet.some(joukkue => joukkue.nimi.trim().toLowerCase() === nimiTrimmed);
     if (onJoOlemassa) {
-      // alert('Samanniminen joukkue on jo olemassa!');
-      return;
+      nimiRef.current.setCustomValidity("Samanniminen joukkue on jo olemassa!");
+      nimiRef.current.reportValidity();
+      return false;
     }
 
     // Tarkista jäsenten nimet
     const taytetytJasenet = jasenet.filter(jasen => jasen.trim());
     if (taytetytJasenet.length < 2) {
-      // alert('Jäseniä on oltava vähintään 2!');
-      return;
+      jasenRef.current.setCustomValidity("Jäseniä on oltava vähintään kaksi!");
+      jasenRef.current.reportValidity();
+      return false;
     }
+
+    return true;
+  }
+
+  // Käsittelee Tallenna-napin klikkauksen ja varmistaa, ettei lomaketta
+  // lähetetä, jos tiedot eivät läpäisseet validointia
+  const handleClick = (event) => {
+    if (validateForm()) {
+      handleSubmit(event);
+    }
+  }
+
+  // Lähettää lomakkeen ja resetoi lomakkeen
+  const handleSubmit = (event) => {
+    event.preventDefault();
 
     // Etsitään valittu sarjaobjekti
     const valittuSarjaObjekti = props.sarjat.find(sarja => sarja.id === valittuSarja);
@@ -123,7 +152,7 @@ const LisaaJoukkue = React.memo(function (props) {
     setNimi('');
     setValitutLeimaustavat([]);
     setValittuSarja(props.sarjat[0].id);
-    setJasenet(Array(5).fill(''));
+    setJasenet(['', '']);
   };
 
   return (
@@ -132,7 +161,13 @@ const LisaaJoukkue = React.memo(function (props) {
         <legend>Joukkueen tiedot</legend>
         <div className="label-container">
           <label htmlFor="nimi">Nimi</label>
-          <input type="text" name="nimi" value={nimi} onChange={handleNimiChange} />
+          <input
+            ref={nimiRef}
+            type="text"
+            name="nimi"
+            value={nimi}
+            onChange={handleNimiChange}
+          />
         </div>
 
         <div className="label-container">
@@ -145,7 +180,7 @@ const LisaaJoukkue = React.memo(function (props) {
                   type="checkbox"
                   name="leimaustapa"
                   value={index}
-                  checked={valitutLeimaustavat.includes(index)}  // Sidotaan tila
+                  checked={valitutLeimaustavat.includes(index)}
                   onChange={handleLeimaustapaChange}
                 />
               </label>
@@ -180,6 +215,7 @@ const LisaaJoukkue = React.memo(function (props) {
               <label>Jäsen {index + 1}</label>
               <div className="input-container">
                 <input
+                  ref={index === 0 ? jasenRef : null}
                   type="text"
                   name={`jasen_${index}`}
                   className="jasen-kentta"
@@ -192,9 +228,10 @@ const LisaaJoukkue = React.memo(function (props) {
         </div>
       </fieldset>
 
-      <input type="submit" name="submit" value="Tallenna" />
+      <button type="button" onClick={handleClick}>Tallenna</button>
     </form>
   );
+
   /* jshint ignore:end */
 });
 

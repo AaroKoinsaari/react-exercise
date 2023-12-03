@@ -22,6 +22,29 @@ const App = function (props) {
     }));
   };
 
+  const paivitaJoukkue = (paivitettyJoukkue) => {
+    setState(prevState => {
+      const uudetJoukkueet = prevState.kilpailu.joukkueet.map(joukkue => {
+        if (joukkue.id === paivitettyJoukkue.id) {
+          return paivitettyJoukkue;
+        }
+        return joukkue;
+      });
+
+      return {
+        kilpailu: {
+          ...prevState.kilpailu,
+          joukkueet: uudetJoukkueet
+        }
+      };
+    });
+  };
+
+  const [muokattavaJoukkue, setMuokattavaJoukkue] = React.useState(null);
+  const asetaMuokattavaJoukkue = (joukkue) => {
+    setMuokattavaJoukkue(joukkue);
+  }
+
   /* jshint ignore:start */
   return (
     <div>
@@ -33,10 +56,14 @@ const App = function (props) {
           jasenet={state.kilpailu.jasenet}
           joukkueet={state.kilpailu.joukkueet}
           lisaaUusiJoukkue={lisaaUusiJoukkue}
+          muokattavaJoukkue={muokattavaJoukkue}
+          asetaMuokattavaJoukkue={asetaMuokattavaJoukkue}
+          paivitaJoukkue={paivitaJoukkue}
         />
         <ListaaJoukkueet
           joukkueet={state.kilpailu.joukkueet}
           leimaustavat={state.kilpailu.leimaustavat}
+          asetaMuokattavaJoukkue={asetaMuokattavaJoukkue}
         />
       </div>
     </div>
@@ -47,10 +74,28 @@ const App = function (props) {
 const LisaaJoukkue = React.memo(function (props) {
   /* jshint ignore:start */
   const MAX_JASENET = 5;  // Dynaamisesti luotujen jäsenkenttien määrän säätämiseen
+
   const [nimi, setNimi] = React.useState('');
   const [valitutLeimaustavat, setValitutLeimaustavat] = React.useState([]);
   const [valittuSarja, setValittuSarja] = React.useState(props.sarjat[0].id); // Alustetaan ensimmäisen sarjan id
   const [jasenet, setJasenet] = React.useState(['', '']);  // Ensimmäiset kaksi tyhjää kenttää
+
+  const [joukkueId, setJoukkueId] = React.useState(null);
+
+  React.useEffect(() => {
+    if (props.muokattavaJoukkue) {
+      setJoukkueId(props.muokattavaJoukkue.id);
+      setNimi(props.muokattavaJoukkue.nimi);
+      setValitutLeimaustavat(props.muokattavaJoukkue.leimaustapa);
+      setValittuSarja(props.muokattavaJoukkue.sarja.id);
+
+      let uudetJasenet = props.muokattavaJoukkue.jasenet.slice();
+      if (uudetJasenet.length < MAX_JASENET) {
+        uudetJasenet.push('');  // Lisää tyhjä jäsenkenttä, jos jäseniä on alle maksimimäärän
+      }
+      setJasenet(uudetJasenet);
+    }
+  }, [props.muokattavaJoukkue]);
 
   const nimiRef = React.useRef();
   const jasenRef = React.useRef();
@@ -105,10 +150,11 @@ const LisaaJoukkue = React.memo(function (props) {
       return false;
     }
 
-    // Tarkista, onko samannimistä joukkuetta jo olemassa (case-insensitive)
+    // Tarkista, onko samannimistä joukkuetta jo olemassa
     let nimiTrimmed = nimi.trim().toLowerCase();
-    let onJoOlemassa = props.joukkueet.some(joukkue => joukkue.nimi.trim().toLowerCase() === nimiTrimmed);
-    if (onJoOlemassa) {
+    let samanniminenJoukkue = props.joukkueet.find(joukkue => joukkue.nimi.trim().toLowerCase() === nimiTrimmed);
+
+    if (samanniminenJoukkue && samanniminenJoukkue.id !== joukkueId) {
       nimiRef.current.setCustomValidity("Samanniminen joukkue on jo olemassa!");
       nimiRef.current.reportValidity();
       return false;
@@ -149,21 +195,26 @@ const LisaaJoukkue = React.memo(function (props) {
 
     // Lähetettävän datan kokoaminen
     const lahettavaData = {
-      id: Date.now(),  // Generoidaan uniikki id
       nimi: nimi.trim(),
-      leimaustavat: valitutLeimaustavat,
+      id: joukkueId ? joukkueId : Date.now(),  // Käytetään olemassa olevaa id:tä jos muokataan joukkuetta
+      leimaustapa: valitutLeimaustavat,
       jasenet: jasenet.filter(jasen => jasen.trim() !== ''),
       sarja: valittuSarjaObjekti,
       rastileimaukset: []
     };
 
-    props.lisaaUusiJoukkue(lahettavaData);  // Lähetetään data
+    if (joukkueId) {
+      props.paivitaJoukkue(lahettavaData);
+    } else {
+      props.lisaaUusiJoukkue(lahettavaData);
+    }
 
     // Tyhjennetään lomake
     setNimi('');
     setValitutLeimaustavat([]);
     setValittuSarja(props.sarjat[0].id);
     setJasenet(['', '']);
+    setJoukkueId(null);  // Nollataan joukkue id, jotta se ei jää muistiin
   };
 
   return (
@@ -263,6 +314,10 @@ const ListaaJoukkueet = React.memo(function (props) {
     return sarjaA.localeCompare(sarjaB);
   });
 
+  const lataaJoukkueenTiedot = (joukkue) => {
+    props.asetaMuokattavaJoukkue(joukkue);
+  }
+
   return (
     <table>
       <thead>
@@ -272,10 +327,12 @@ const ListaaJoukkueet = React.memo(function (props) {
         </tr>
       </thead>
       <tbody>
-        {jarjestetytJoukkueet.map((joukkue, index) => (
+        {jarjestetytJoukkueet.map((joukkue) => (
           <tr key={joukkue.id}>
             <td>{joukkue.sarja.nimi}</td>
-            <td>{joukkue.nimi}</td>
+            <td style={{ cursor: 'pointer' }} onClick={() => lataaJoukkueenTiedot(joukkue)}>
+              {joukkue.nimi}
+            </td>
           </tr>
         ))}
       </tbody>

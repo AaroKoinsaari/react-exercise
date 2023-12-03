@@ -320,20 +320,40 @@ const ListaaJoukkueet = React.memo(function (props) {
     return (
       <tr>
         <td>{joukkue.sarja.nimi}</td>
-        <td style={{ cursor: 'pointer' }} onClick={() => lataaJoukkueenTiedot(joukkue)}>
-          {joukkue.nimi}
+        <td>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              lataaJoukkueenTiedot(joukkue);
+            }}
+            style={{ cursor: 'pointer', textDecoration: 'underline' }}
+          >
+            {joukkue.nimi}
+          </a>
+          <div>
+            ({leimaustapojenNimet(joukkue.leimaustapa)})
+          </div>
         </td>
         <td>
           <JoukkueenJasenet jasenet={joukkue.jasenet} />
+        </td>
+        <td>
+          <JoukkueenMatka rastileimaukset={joukkue.rastileimaukset} />
         </td>
       </tr>
     );
   };
 
+  // Muunnetaan leimaustapojen indeksit niiden nimiksi ja liitetään ne yhteen
+  const leimaustapojenNimet = (leimaustapa) => {
+    return leimaustapa.map(index => props.leimaustavat[index]).sort().join(', ');
+  };
+
   // Komponentti joukkueen jäsenistä
   const JoukkueenJasenet = ({ jasenet }) => {
     return (
-      <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
+      <ul>
         {jasenet.map((jasen, index) => (
           <li key={index}>{jasen}</li>
         ))}
@@ -410,28 +430,8 @@ const ListaaJoukkueet = React.memo(function (props) {
         </tr>
       </thead>
       <tbody>
-        {jarjestetytJoukkueet.map((joukkue) => (
-          <tr key={joukkue.id}>
-            <td>{joukkue.sarja.nimi}</td>
-            <td>
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  lataaJoukkueenTiedot(joukkue);
-                }}
-                style={{ cursor: 'pointer', textDecoration: 'underline' }}
-              >
-                {joukkue.nimi}
-              </a>
-            </td>
-            <td>
-              <JoukkueenJasenet jasenet={joukkue.jasenet} />
-            </td>
-            <td>
-              <JoukkueenMatka rastileimaukset={joukkue.rastileimaukset} />
-            </td>
-          </tr>
+        {jarjestetytJoukkueet.map(joukkue => (
+          <JoukkueenTiedot key={joukkue.id} joukkue={joukkue} />
         ))}
       </tbody>
     </table>

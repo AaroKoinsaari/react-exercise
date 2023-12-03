@@ -54,6 +54,7 @@ const LisaaJoukkue = React.memo(function (props) {
 
   const nimiRef = React.useRef();
   const jasenRef = React.useRef();
+  const leimaustavatRef = React.useRef();
 
   // Päivitetään jäsenen arvo tiettyyn indeksiin
   const handleJasenChange = (index, value) => {
@@ -93,6 +94,9 @@ const LisaaJoukkue = React.memo(function (props) {
     if (jasenRef.current) {
       jasenRef.current.setCustomValidity("");
     }
+    if (leimaustavatRef.current) {
+      leimaustavatRef.current.setCustomValidity("");
+    }
 
     // Tarkista joukkueen nimi
     if (!nimi.trim()) {
@@ -107,6 +111,13 @@ const LisaaJoukkue = React.memo(function (props) {
     if (onJoOlemassa) {
       nimiRef.current.setCustomValidity("Samanniminen joukkue on jo olemassa!");
       nimiRef.current.reportValidity();
+      return false;
+    }
+
+    // Tarkista, että vähintään yksi leimaustapa on valittu
+    if (valitutLeimaustavat.length === 0) {
+      leimaustavatRef.current.setCustomValidity("Valitse vähintään yksi leimaustapa!");
+      leimaustavatRef.current.reportValidity();
       return false;
     }
 
@@ -182,6 +193,7 @@ const LisaaJoukkue = React.memo(function (props) {
                   value={index}
                   checked={valitutLeimaustavat.includes(index)}
                   onChange={handleLeimaustapaChange}
+                  ref={index === 0 ? leimaustavatRef : null}
                 />
               </label>
             ))}

@@ -79,6 +79,7 @@ const LisaaJoukkue = React.memo(function (props) {
   const [valitutLeimaustavat, setValitutLeimaustavat] = React.useState([]);
   const [valittuSarja, setValittuSarja] = React.useState(props.sarjat[0].id); // Alustetaan ensimmäisen sarjan id
   const [jasenet, setJasenet] = React.useState(['', '']);  // Ensimmäiset kaksi tyhjää kenttää
+  const [rastileimaukset, setRastileimaukset] = React.useState([]);
 
   const [joukkueId, setJoukkueId] = React.useState(null);
 
@@ -88,6 +89,7 @@ const LisaaJoukkue = React.memo(function (props) {
       setNimi(props.muokattavaJoukkue.nimi);
       setValitutLeimaustavat(props.muokattavaJoukkue.leimaustapa);
       setValittuSarja(props.muokattavaJoukkue.sarja.id);
+      setRastileimaukset(props.muokattavaJoukkue.rastileimaukset);
 
       let uudetJasenet = props.muokattavaJoukkue.jasenet.slice();
       if (uudetJasenet.length < MAX_JASENET) {
@@ -200,7 +202,7 @@ const LisaaJoukkue = React.memo(function (props) {
       leimaustapa: valitutLeimaustavat,
       jasenet: jasenet.filter(jasen => jasen.trim() !== ''),
       sarja: valittuSarjaObjekti,
-      rastileimaukset: []
+      rastileimaukset: rastileimaukset
     };
 
     if (joukkueId) {
@@ -327,7 +329,6 @@ const ListaaJoukkueet = React.memo(function (props) {
               e.preventDefault();
               lataaJoukkueenTiedot(joukkue);
             }}
-            style={{ cursor: 'pointer', textDecoration: 'underline' }}
           >
             {joukkue.nimi}
           </a>
@@ -375,7 +376,7 @@ const ListaaJoukkueet = React.memo(function (props) {
     const maaliIndex = jarjestetytLeimaukset.map(leimaus => leimaus.rasti.koodi).indexOf('MAALI');
 
     if (lahtoIndex === -1 || maaliIndex === -1 || lahtoIndex >= maaliIndex) {
-      return <span>Matkaa ei voida laskea</span>;
+      return <span>0 km</span>;
     }
 
     // Lasketaan matka lähtö- ja maalirastin välillä

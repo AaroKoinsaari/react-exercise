@@ -66,7 +66,25 @@ const App = function (props) {
     });
   };
 
-  const RastiKartta = ({ lat, lon, rastiId }) => {
+  const paivitaKoordinaatit = (rastiId, uusiLat, uusiLon) => {
+    setState(prevState => {
+      const uusiKilpailu = kopioi_kilpailu(prevState.kilpailu);
+
+      // Etsitään päivitettävä rasti rastit-taulukosta
+      const rastiIndex = uusiKilpailu.rastit.findIndex(rasti => rasti.id === rastiId);
+
+      if (rastiIndex !== -1) {
+        // Päivitetään rastin koordinaatit
+        uusiKilpailu.rastit[rastiIndex].lat = String(uusiLat);
+        uusiKilpailu.rastit[rastiIndex].lon = String(uusiLon);
+      }
+
+      return { kilpailu: uusiKilpailu };
+    });
+  };
+
+
+  const RastiKartta = ({ lat, lon, rastiId, paivitaKoordinaatit }) => {
     React.useEffect(() => {
       const mapId = "map-" + rastiId;
       const map = L.map(mapId).setView([lat, lon], 13);
@@ -75,13 +93,19 @@ const App = function (props) {
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
 
-      L.marker([lat, lon]).addTo(map);
+      const marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+
+      marker.on('dragend', function (event) {
+        const newCoords = event.target.getLatLng();
+        paivitaKoordinaatit(rastiId, newCoords.lat, newCoords.lng);
+      });
 
       return () => map.remove();
-    }, [lat, lon, rastiId]);
+    }, [lat, lon, rastiId, paivitaKoordinaatit]);
 
     return <div id={"map-" + rastiId} className="rasti-kartta" style={{ height: '200px', width: '200px' }}></div>;
   }
+
 
   const RastiListaus = ({ rastit, paivitaRastit }) => {
     const [muokattavaRastiId, setMuokattavaRastiId] = React.useState(null);
@@ -136,15 +160,13 @@ const App = function (props) {
               ({rasti.lat}, {rasti.lon})
             </span>
             {aktiivinenRastiKartalle && aktiivinenRastiKartalle.id === rasti.id && (
-              <RastiKartta lat={rasti.lat} lon={rasti.lon} rastiId={rasti.id} />
+              <RastiKartta lat={rasti.lat} lon={rasti.lon} rastiId={rasti.id} paivitaKoordinaatit={paivitaKoordinaatit} />
             )}
           </li>
         ))}
       </ul>
     );
   };
-
-
 
   /* jshint ignore:start */
   return (
@@ -162,8 +184,7 @@ const App = function (props) {
             asetaMuokattavaJoukkue={asetaMuokattavaJoukkue}
             paivitaJoukkue={paivitaJoukkue}
           />
-          <RastiListaus rastit={state.kilpailu.rastit} paivitaRastit={paivitaRastit} />
-        </div>
+          <RastiListaus rastit={state.kilpailu.rastit} paivitaRastit={paivitaRastit} paivitaKoordinaatit={paivitaKoordinaatit} />        </div>
         <ListaaJoukkueet
           joukkueet={state.kilpailu.joukkueet}
           leimaustavat={state.kilpailu.leimaustavat}

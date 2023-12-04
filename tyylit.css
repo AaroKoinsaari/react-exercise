@@ -86,3 +86,8 @@ th {
     background-color: #ffc653;
     color: solid #333;
 }
+
+.rasti-kartta {
+    flex: 1;
+    margin-left: 20px;
+}

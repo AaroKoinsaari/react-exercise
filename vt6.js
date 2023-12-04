@@ -66,9 +66,27 @@ const App = function (props) {
     });
   };
 
+  const RastiKartta = ({ lat, lon, rastiId }) => {
+    React.useEffect(() => {
+      const mapId = "map-" + rastiId;
+      const map = L.map(mapId).setView([lat, lon], 13);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      L.marker([lat, lon]).addTo(map);
+
+      return () => map.remove();
+    }, [lat, lon, rastiId]);
+
+    return <div id={"map-" + rastiId} className="rasti-kartta" style={{ height: '200px', width: '200px' }}></div>;
+  }
+
   const RastiListaus = ({ rastit, paivitaRastit }) => {
     const [muokattavaRastiId, setMuokattavaRastiId] = React.useState(null);
     const [muokattavaKoodi, setMuokattavaKoodi] = React.useState("");
+    const [aktiivinenRastiKartalle, setAktiivinenRastiKartalle] = React.useState(null);
     const rastiRef = React.useRef(null);
 
     const muokkaaRastia = (rasti) => {
@@ -81,12 +99,16 @@ const App = function (props) {
       const trimmattuKoodi = muokattavaKoodi.trim();
       if (/^\d/.test(trimmattuKoodi)) {
         paivitaRastit(id, trimmattuKoodi);
-        setMuokattavaKoodi(null);  // Poistetaan muokkaustila
+        setMuokattavaRastiId(null);
+        setMuokattavaKoodi("");
       } else {
         rastiRef.current.setCustomValidity("Rastikoodin tulee alkaa numerolla");
         rastiRef.current.reportValidity();
-        setMuokattavaRastiId(id);  // Pysytään muokkaustilassa, kunnes syöte on oikea
       }
+    };
+
+    const naytaRastiKartalla = (rasti) => {
+      setAktiivinenRastiKartalle(rasti);
     };
 
     return (
@@ -109,12 +131,19 @@ const App = function (props) {
             ) : (
               <span onClick={() => muokkaaRastia(rasti)}>{rasti.koodi}</span>
             )}
-            {" "}({rasti.lat}, {rasti.lon})
+            {" "}
+            <span onClick={() => naytaRastiKartalla(rasti)}>
+              ({rasti.lat}, {rasti.lon})
+            </span>
+            {aktiivinenRastiKartalle && aktiivinenRastiKartalle.id === rasti.id && (
+              <RastiKartta lat={rasti.lat} lon={rasti.lon} rastiId={rasti.id} />
+            )}
           </li>
         ))}
       </ul>
     );
   };
+
 
 
   /* jshint ignore:start */

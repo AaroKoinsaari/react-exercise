@@ -69,6 +69,7 @@ const App = function (props) {
   const RastiListaus = ({ rastit, paivitaRastit }) => {
     const [muokattavaRastiId, setMuokattavaRastiId] = React.useState(null);
     const [muokattavaKoodi, setMuokattavaKoodi] = React.useState("");
+    const rastiRef = React.useRef(null);
 
     const muokkaaRastia = (rasti) => {
       setMuokattavaRastiId(rasti.id);
@@ -76,11 +77,16 @@ const App = function (props) {
     };
 
     const tallennaMuokkaus = (id) => {
-      // Päivitetään rastin koodi
-      paivitaRastit(id, muokattavaKoodi);
-
-      // Poistetaan muokkaustila
-      setMuokattavaRastiId(null);
+      // Tarkistetaan, että alkaa numerolla
+      const trimmattuKoodi = muokattavaKoodi.trim();
+      if (/^\d/.test(trimmattuKoodi)) {
+        paivitaRastit(id, trimmattuKoodi);
+        setMuokattavaKoodi(null);  // Poistetaan muokkaustila
+      } else {
+        rastiRef.current.setCustomValidity("Rastikoodin tulee alkaa numerolla");
+        rastiRef.current.reportValidity();
+        setMuokattavaRastiId(id);  // Pysytään muokkaustilassa, kunnes syöte on oikea
+      }
     };
 
     return (
@@ -89,6 +95,7 @@ const App = function (props) {
           <li key={rasti.id}>
             {muokattavaRastiId === rasti.id ? (
               <input
+                ref={rastiRef}
                 type="text"
                 value={muokattavaKoodi}
                 onChange={(e) => setMuokattavaKoodi(e.target.value)}

@@ -13,18 +13,23 @@ const App = function (props) {
   // data = undefined; // tyhjätään data, että sitä ei vahingossa käytetä
   console.log(state.kilpailu);
 
+  // Lisää uuden joukkueen sovelluksen tilaan
   const lisaaUusiJoukkue = (uusiJoukkue) => {
     setState(prevState => ({
       kilpailu: {
         ...prevState.kilpailu,
+        // Lisätään uusi joukkue nykyisten joukkoon
         joukkueet: [...prevState.kilpailu.joukkueet, uusiJoukkue]
       }
     }));
   };
 
+  // Päivittää olemassa olevan joukkueen tiedot sovelluksen tilassa
   const paivitaJoukkue = (paivitettyJoukkue) => {
     setState(prevState => {
+      // Luodaan uusi joukkueiden lista, jossa yhden joukkueen tiedot on päivitetty
       const uudetJoukkueet = prevState.kilpailu.joukkueet.map(joukkue => {
+        // Jos löytyy päivitettävä joukkue, korvataan se uudella datalla
         if (joukkue.id === paivitettyJoukkue.id) {
           return paivitettyJoukkue;
         }
@@ -40,11 +45,14 @@ const App = function (props) {
     });
   };
 
-  const [muokattavaJoukkue, setMuokattavaJoukkue] = React.useState(null);
+  const [muokattavaJoukkue, setMuokattavaJoukkue] = React.useState(null);  // Tila muokattavalle joukkueelle
+
+  // Asettaa valitun joukkueen muokattavaksi
   const asetaMuokattavaJoukkue = (joukkue) => {
     setMuokattavaJoukkue(joukkue);
   };
 
+  // Päivittää yksittäisen rastin koodin sovelluksen tilassa
   const paivitaRastit = (id, uusiKoodi) => {
     setState(prevState => {
       // Kopioidaan rastit ja päivitetään muokatun rastin koodi
@@ -55,7 +63,6 @@ const App = function (props) {
         return rasti;
       });
 
-      // Päivitetään tila uusilla rasteilla
       return {
         ...prevState,
         kilpailu: {
@@ -66,63 +73,100 @@ const App = function (props) {
     });
   };
 
+  // Päivittää yksittäisen rastin koordinaatteja ja laskee uudelleen joukkueiden matkat
   const paivitaKoordinaatit = (rastiId, uusiLat, uusiLon) => {
     setState(prevState => {
       const uusiKilpailu = kopioi_kilpailu(prevState.kilpailu);
 
-      // Etsitään päivitettävä rasti rastit-taulukosta
+      // Päivitetään rastin koordinaatit
       const rastiIndex = uusiKilpailu.rastit.findIndex(rasti => rasti.id === rastiId);
-
       if (rastiIndex !== -1) {
-        // Päivitetään rastin koordinaatit
         uusiKilpailu.rastit[rastiIndex].lat = String(uusiLat);
         uusiKilpailu.rastit[rastiIndex].lon = String(uusiLon);
       }
 
-      return { kilpailu: uusiKilpailu };
+      // Lasketaan joukkueiden matkat uudelleen
+      const uudetJoukkueet = uusiKilpailu.joukkueet.map(joukkue => {
+        const uusiMatka = laskeJoukkueenMatka(joukkue, uusiKilpailu.rastit);
+        return { ...joukkue, matka: uusiMatka };
+      });
+
+      return { kilpailu: { ...uusiKilpailu, joukkueet: uudetJoukkueet } };
     });
   };
 
+  // Laskee yksittäisen joukkueen matkan annettujen rastitietojen perusteella
+  const laskeJoukkueenMatka = (joukkue, rastit) => {
+    // Suodatetaan ja järjestetään joukkueen rastileimaukset
+    const kelvollisetLeimaukset = joukkue.rastileimaukset.filter(leimaus =>
+      leimaus.rasti && rastit.some(r => r.id === leimaus.rasti.id && r.lat && r.lon)
+    ).sort((a, b) => new Date(a.aika) - new Date(b.aika));
 
+    let matka = 0;
+    for (let i = 0; i < kelvollisetLeimaukset.length - 1; i++) {
+      const nykyinenRasti = rastit.find(r => r.id === kelvollisetLeimaukset[i].rasti.id);
+      const seuraavaRasti = rastit.find(r => r.id === kelvollisetLeimaukset[i + 1].rasti.id);
+
+      if (nykyinenRasti && seuraavaRasti) {
+        matka += getDistanceFromLatLonInKm(
+          parseFloat(nykyinenRasti.lat), parseFloat(nykyinenRasti.lon),
+          parseFloat(seuraavaRasti.lat), parseFloat(seuraavaRasti.lon)
+        );
+      }
+    }
+
+    return matka;
+  };
+
+
+  // Karttakomponentti, joka luo ja näyttää kartan yksittäiselle rastille
   const RastiKartta = ({ lat, lon, rastiId, paivitaKoordinaatit }) => {
+    // Luo kartan jokaiselle rastille ja asettaa sen sijainnin
     React.useEffect(() => {
-      const mapId = "map-" + rastiId;
+      const mapId = "map-" + rastiId;  // Luo yksilöllisen kartan id:n rastin id:stä
       const map = L.map(mapId).setView([lat, lon], 13);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
 
+      // Luodaan raahattava marker kartalle nykyisissä koordinateissa
       const marker = L.marker([lat, lon], { draggable: true }).addTo(map);
 
+      // Tapahtumankäsittelijä raahaukselle
       marker.on('dragend', function (event) {
         const newCoords = event.target.getLatLng();
         paivitaKoordinaatit(rastiId, newCoords.lat, newCoords.lng);
       });
 
+      // Siivotaan luotu kartta komponentin poistuessa
       return () => map.remove();
     }, [lat, lon, rastiId, paivitaKoordinaatit]);
 
     return <div id={"map-" + rastiId} className="rasti-kartta" style={{ height: '200px', width: '200px' }}></div>;
   }
 
-
+  // Rastilistauskomponentti, joka vastaa rastien listauksesta ja niiden muokkaamisesta
   const RastiListaus = ({ rastit, paivitaRastit }) => {
     const [muokattavaRastiId, setMuokattavaRastiId] = React.useState(null);
     const [muokattavaKoodi, setMuokattavaKoodi] = React.useState("");
     const [aktiivinenRastiKartalle, setAktiivinenRastiKartalle] = React.useState(null);
-    const rastiRef = React.useRef(null);
+    const rastiRef = React.useRef(null);  // Viittaa muokattavaan rastiin
 
+    // Aktivoi rastin muokkaustilan
     const muokkaaRastia = (rasti) => {
       setMuokattavaRastiId(rasti.id);
       setMuokattavaKoodi(rasti.koodi);
     };
 
+    // Tallentaa rastin koodin ja poistaa muokkaustilan
     const tallennaMuokkaus = (id) => {
       // Tarkistetaan, että alkaa numerolla
       const trimmattuKoodi = muokattavaKoodi.trim();
       if (/^\d/.test(trimmattuKoodi)) {
         paivitaRastit(id, trimmattuKoodi);
+
+        // Poistetaan muokkaustila
         setMuokattavaRastiId(null);
         setMuokattavaKoodi("");
       } else {
@@ -131,11 +175,14 @@ const App = function (props) {
       }
     };
 
+    // Näyttää valitun rastin kartalla
     const naytaRastiKartalla = (rasti) => {
       setAktiivinenRastiKartalle(rasti);
     };
 
+    // Käytetään keskittämään fokus muokattavaan rastiin
     React.useEffect(() => {
+      // Jos muokattava rasti on valittu ja ref on olemassa, keskitetään fokus
       if (muokattavaRastiId !== null && rastiRef.current) {
         rastiRef.current.focus();
       }
@@ -172,6 +219,7 @@ const App = function (props) {
         ))}
       </ul>
     );
+    /* jshint ignore:end */
   };
 
   /* jshint ignore:start */
@@ -206,14 +254,20 @@ const LisaaJoukkue = React.memo(function (props) {
   /* jshint ignore:start */
   const MAX_JASENET = 5;  // Dynaamisesti luotujen jäsenkenttien määrän säätämiseen
 
+  // Tilamuuttujat joukkueen eri tietojen tallentamiseen
   const [nimi, setNimi] = React.useState('');
   const [valitutLeimaustavat, setValitutLeimaustavat] = React.useState([]);
   const [valittuSarja, setValittuSarja] = React.useState(props.sarjat[0].id); // Alustetaan ensimmäisen sarjan id
   const [jasenet, setJasenet] = React.useState(['', '']);  // Ensimmäiset kaksi tyhjää kenttää
   const [rastileimaukset, setRastileimaukset] = React.useState([]);
-
   const [joukkueId, setJoukkueId] = React.useState(null);
 
+  // Refit lomakkeen kenttien viittausta varten
+  const nimiRef = React.useRef();
+  const jasenRef = React.useRef();
+  const leimaustavatRef = React.useRef();
+
+  // Päivittää tilan
   React.useEffect(() => {
     if (props.muokattavaJoukkue) {
       setJoukkueId(props.muokattavaJoukkue.id);
@@ -229,10 +283,6 @@ const LisaaJoukkue = React.memo(function (props) {
       setJasenet(uudetJasenet);
     }
   }, [props.muokattavaJoukkue]);
-
-  const nimiRef = React.useRef();
-  const jasenRef = React.useRef();
-  const leimaustavatRef = React.useRef();
 
   // Päivitetään jäsenen arvo tiettyyn indeksiin
   const handleJasenChange = (index, value) => {
@@ -252,6 +302,7 @@ const LisaaJoukkue = React.memo(function (props) {
     setNimi(event.target.value);
   };
 
+  // Leimaustapojen käsittely
   const handleLeimaustapaChange = (event) => {
     const valittu = parseInt(event.target.value);
     setValitutLeimaustavat(prev =>
@@ -259,6 +310,7 @@ const LisaaJoukkue = React.memo(function (props) {
     );
   };
 
+  // Sarjojen käsittely
   const handleSarjaChange = (event) => {
     setValittuSarja(parseInt(event.target.value));
   };
@@ -286,7 +338,6 @@ const LisaaJoukkue = React.memo(function (props) {
     // Tarkista, onko samannimistä joukkuetta jo olemassa
     let nimiTrimmed = nimi.trim().toLowerCase();
     let samanniminenJoukkue = props.joukkueet.find(joukkue => joukkue.nimi.trim().toLowerCase() === nimiTrimmed);
-
     if (samanniminenJoukkue && samanniminenJoukkue.id !== joukkueId) {
       nimiRef.current.setCustomValidity("Samanniminen joukkue on jo olemassa!");
       nimiRef.current.reportValidity();
@@ -342,12 +393,13 @@ const LisaaJoukkue = React.memo(function (props) {
       props.lisaaUusiJoukkue(lahettavaData);
     }
 
-    // Tyhjennetään lomake
+    // Tyhjennetään lomake ja nollataan tilamuuttujat
     setNimi('');
     setValitutLeimaustavat([]);
     setValittuSarja(props.sarjat[0].id);
     setJasenet(['', '']);
-    setJoukkueId(null);  // Nollataan joukkue id, jotta se ei jää muistiin
+    setRastileimaukset([]);
+    setJoukkueId(null);
   };
 
   return (
@@ -427,7 +479,6 @@ const LisaaJoukkue = React.memo(function (props) {
       <button type="button" onClick={handleClick}>Tallenna</button>
     </form>
   );
-
   /* jshint ignore:end */
 });
 
@@ -491,6 +542,7 @@ const ListaaJoukkueet = React.memo(function (props) {
     );
   };
 
+  // Komponentti joukkueen kulkemalle matkalle
   const JoukkueenMatka = ({ rastileimaukset }) => {
     // Suodatetaan pois rastileimaukset, joilla ei ole kelvollisia sijaintitietoja
     const kelvollisetLeimaukset = rastileimaukset.filter(leimaus =>
@@ -526,29 +578,6 @@ const ListaaJoukkueet = React.memo(function (props) {
     return <span>{matka.toFixed(2)} km</span>;
   };
 
-  /**
-  * Laskee kahden pisteen välisen etäisyyden
-  */
-  function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-    let R = 6371; // Radius of the earth in km
-    let dLat = deg2rad(lat2 - lat1);  // deg2rad below
-    let dLon = deg2rad(lon2 - lon1);
-    let a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2)
-      ;
-    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    let d = R * c; // Distance in km
-    return d;
-  }
-  /**
-     Muuntaa asteet radiaaneiksi
-    */
-  function deg2rad(deg) {
-    return deg * (Math.PI / 180);
-  }
-
   return (
     <table>
       <thead>
@@ -575,6 +604,30 @@ root.render(
   <App />,
   /* jshint ignore:end */
 );
+
+
+/**
+* Laskee kahden pisteen välisen etäisyyden
+*/
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  let R = 6371; // Radius of the earth in km
+  let dLat = deg2rad(lat2 - lat1);  // deg2rad below
+  let dLon = deg2rad(lon2 - lon1);
+  let a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    ;
+  let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  let d = R * c; // Distance in km
+  return d;
+}
+/**
+   Muuntaa asteet radiaaneiksi
+  */
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
+}
 
 // datarakenteen kopioiminen
 // joukkueen leimausten rasti on viite rastitaulukon rasteihin

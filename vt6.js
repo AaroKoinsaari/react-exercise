@@ -43,23 +43,91 @@ const App = function (props) {
   const [muokattavaJoukkue, setMuokattavaJoukkue] = React.useState(null);
   const asetaMuokattavaJoukkue = (joukkue) => {
     setMuokattavaJoukkue(joukkue);
-  }
+  };
+
+  const paivitaRastit = (id, uusiKoodi) => {
+    setState(prevState => {
+      // Kopioidaan rastit ja päivitetään muokatun rastin koodi
+      const uudetRastit = prevState.kilpailu.rastit.map(rasti => {
+        if (rasti.id === id) {
+          return { ...rasti, koodi: uusiKoodi };
+        }
+        return rasti;
+      });
+
+      // Päivitetään tila uusilla rasteilla
+      return {
+        ...prevState,
+        kilpailu: {
+          ...prevState.kilpailu,
+          rastit: uudetRastit
+        }
+      };
+    });
+  };
+
+  const RastiListaus = ({ rastit, paivitaRastit }) => {
+    const [muokattavaRastiId, setMuokattavaRastiId] = React.useState(null);
+    const [muokattavaKoodi, setMuokattavaKoodi] = React.useState("");
+
+    const muokkaaRastia = (rasti) => {
+      setMuokattavaRastiId(rasti.id);
+      setMuokattavaKoodi(rasti.koodi);
+    };
+
+    const tallennaMuokkaus = (id) => {
+      // Päivitetään rastin koodi
+      paivitaRastit(id, muokattavaKoodi);
+
+      // Poistetaan muokkaustila
+      setMuokattavaRastiId(null);
+    };
+
+    return (
+      <ul>
+        {rastit.map((rasti) => (
+          <li key={rasti.id}>
+            {muokattavaRastiId === rasti.id ? (
+              <input
+                type="text"
+                value={muokattavaKoodi}
+                onChange={(e) => setMuokattavaKoodi(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    tallennaMuokkaus(rasti.id);
+                  }
+                }}
+                onBlur={() => tallennaMuokkaus(rasti.id)}
+              />
+            ) : (
+              <span onClick={() => muokkaaRastia(rasti)}>{rasti.koodi}</span>
+            )}
+            {" "}({rasti.lat}, {rasti.lon})
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
 
   /* jshint ignore:start */
   return (
     <div>
       <h1>Lisää joukkue</h1>
       <div className="flex-container">
-        <LisaaJoukkue
-          leimaustavat={state.kilpailu.leimaustavat}
-          sarjat={state.kilpailu.sarjat}
-          jasenet={state.kilpailu.jasenet}
-          joukkueet={state.kilpailu.joukkueet}
-          lisaaUusiJoukkue={lisaaUusiJoukkue}
-          muokattavaJoukkue={muokattavaJoukkue}
-          asetaMuokattavaJoukkue={asetaMuokattavaJoukkue}
-          paivitaJoukkue={paivitaJoukkue}
-        />
+        <div className="left-side">
+          <LisaaJoukkue
+            leimaustavat={state.kilpailu.leimaustavat}
+            sarjat={state.kilpailu.sarjat}
+            jasenet={state.kilpailu.jasenet}
+            joukkueet={state.kilpailu.joukkueet}
+            lisaaUusiJoukkue={lisaaUusiJoukkue}
+            muokattavaJoukkue={muokattavaJoukkue}
+            asetaMuokattavaJoukkue={asetaMuokattavaJoukkue}
+            paivitaJoukkue={paivitaJoukkue}
+          />
+          <RastiListaus rastit={state.kilpailu.rastit} paivitaRastit={paivitaRastit} />
+        </div>
         <ListaaJoukkueet
           joukkueet={state.kilpailu.joukkueet}
           leimaustavat={state.kilpailu.leimaustavat}
@@ -331,10 +399,8 @@ const ListaaJoukkueet = React.memo(function (props) {
             }}
           >
             {joukkue.nimi}
-          </a>
-          <div>
-            ({leimaustapojenNimet(joukkue.leimaustapa)})
-          </div>
+          </a>{" "}
+          ({leimaustapojenNimet(joukkue.leimaustapa)})
         </td>
         <td>
           <JoukkueenJasenet jasenet={joukkue.jasenet} />

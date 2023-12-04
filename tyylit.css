@@ -3,6 +3,10 @@
     align-items: start;
 }
 
+.left-side {
+    margin-right: 10px
+}
+
 form {
     width: 30rem;
     align-items: baseline;

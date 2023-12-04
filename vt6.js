@@ -120,7 +120,7 @@ const App = function (props) {
 
 
   // Karttakomponentti, joka luo ja näyttää kartan yksittäiselle rastille
-  const RastiKartta = ({ lat, lon, rastiId, paivitaKoordinaatit }) => {
+  const RastiKartta = React.memo(({ lat, lon, rastiId, paivitaKoordinaatit }) => {
     // Luo kartan jokaiselle rastille ja asettaa sen sijainnin
     React.useEffect(() => {
       const mapId = "map-" + rastiId;  // Luo yksilöllisen kartan id:n rastin id:stä
@@ -144,14 +144,32 @@ const App = function (props) {
     }, [lat, lon, rastiId, paivitaKoordinaatit]);
 
     return <div id={"map-" + rastiId} className="rasti-kartta" style={{ height: '200px', width: '200px' }}></div>;
-  }
+  });
 
   // Rastilistauskomponentti, joka vastaa rastien listauksesta ja niiden muokkaamisesta
-  const RastiListaus = ({ rastit, paivitaRastit }) => {
+  const RastiListaus = React.memo(({ rastit, paivitaRastit }) => {
     const [muokattavaRastiId, setMuokattavaRastiId] = React.useState(null);
     const [muokattavaKoodi, setMuokattavaKoodi] = React.useState("");
     const [aktiivinenRastiKartalle, setAktiivinenRastiKartalle] = React.useState(null);
+
     const rastiRef = React.useRef(null);  // Viittaa muokattavaan rastiin
+    const karttaRef = React.useRef(null); // Viittaus aktiiviseen karttaan
+
+    const suljeKartta = (event) => {
+      if (karttaRef.current && !karttaRef.current.contains(event.target)) {
+        setAktiivinenRastiKartalle(null); // Sulkee kartan, jos klikkaus tapahtuu kartan ulkopuolella
+      }
+    };
+
+    React.useEffect(() => {
+      // Lisätään tapahtumankuuntelija dokumenttiin
+      document.addEventListener('mousedown', suljeKartta);
+
+      return () => {
+        // Poistetaan tapahtumankuuntelija, kun komponentti poistuu
+        document.removeEventListener('mousedown', suljeKartta);
+      };
+    }, []);
 
     // Aktivoi rastin muokkaustilan
     const muokkaaRastia = (rasti) => {
@@ -189,38 +207,42 @@ const App = function (props) {
     }, [muokattavaRastiId]);
 
     return (
-      <ul>
-        {rastit.map((rasti) => (
-          <li key={rasti.id}>
-            {muokattavaRastiId === rasti.id ? (
-              <input
-                ref={rastiRef}
-                type="text"
-                value={muokattavaKoodi}
-                onChange={(e) => setMuokattavaKoodi(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    tallennaMuokkaus(rasti.id);
-                  }
-                }}
-                onBlur={() => tallennaMuokkaus(rasti.id)}
-              />
-            ) : (
-              <span onClick={() => muokkaaRastia(rasti)}>{rasti.koodi}</span>
-            )}
-            {" "}
-            <span onClick={() => naytaRastiKartalla(rasti)}>
-              ({rasti.lat}, {rasti.lon})
-            </span>
-            {aktiivinenRastiKartalle && aktiivinenRastiKartalle.id === rasti.id && (
-              <RastiKartta lat={rasti.lat} lon={rasti.lon} rastiId={rasti.id} paivitaKoordinaatit={paivitaKoordinaatit} />
-            )}
-          </li>
-        ))}
-      </ul>
+      <div className="rastit-container">
+        <ul>
+          {rastit.map((rasti) => (
+            <li key={rasti.id}>
+              {muokattavaRastiId === rasti.id ? (
+                <input
+                  ref={rastiRef}
+                  type="text"
+                  value={muokattavaKoodi}
+                  onChange={(e) => setMuokattavaKoodi(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      tallennaMuokkaus(rasti.id);
+                    }
+                  }}
+                  onBlur={() => tallennaMuokkaus(rasti.id)}
+                />
+              ) : (
+                <span onClick={() => muokkaaRastia(rasti)}>{rasti.koodi}</span>
+              )}
+              {" "}
+              <span onClick={() => naytaRastiKartalla(rasti)}>
+                ({rasti.lat}, {rasti.lon})
+              </span>
+              {aktiivinenRastiKartalle && aktiivinenRastiKartalle.id === rasti.id && (
+                <div ref={karttaRef}>
+                  <RastiKartta lat={rasti.lat} lon={rasti.lon} rastiId={rasti.id} paivitaKoordinaatit={paivitaKoordinaatit} />
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
     );
     /* jshint ignore:end */
-  };
+  });
 
   /* jshint ignore:start */
   return (
@@ -543,7 +565,7 @@ const ListaaJoukkueet = React.memo(function (props) {
   };
 
   // Komponentti joukkueen kulkemalle matkalle
-  const JoukkueenMatka = ({ rastileimaukset }) => {
+  const JoukkueenMatka = React.memo(({ rastileimaukset }) => {
     // Suodatetaan pois rastileimaukset, joilla ei ole kelvollisia sijaintitietoja
     const kelvollisetLeimaukset = rastileimaukset.filter(leimaus =>
       leimaus.rasti && leimaus.rasti.lat && leimaus.rasti.lon
@@ -576,7 +598,7 @@ const ListaaJoukkueet = React.memo(function (props) {
     }
 
     return <span>{matka.toFixed(2)} km</span>;
-  };
+  });
 
   return (
     <table>

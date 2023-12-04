@@ -135,6 +135,12 @@ const App = function (props) {
       setAktiivinenRastiKartalle(rasti);
     };
 
+    React.useEffect(() => {
+      if (muokattavaRastiId !== null && rastiRef.current) {
+        rastiRef.current.focus();
+      }
+    }, [muokattavaRastiId]);
+
     return (
       <ul>
         {rastit.map((rasti) => (
